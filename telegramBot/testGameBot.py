@@ -4,9 +4,27 @@ from time import sleep
 
 bot = telebot.TeleBot('6189669484:AAHjBHycz0bq1s5tvBLC5ky17Iff2Wrk_8U')
 STAGE = ''
-SIDEBOARD_PIN = '534281'                                                    # Пароль от серванта в гостинной
-NIGHTSTAND_PIN = '21343'                                                    # Пароль от тумбочки в спальне
-BATHROOM_PIN = '12345'                                                      # Пароль от шкафа под ванной
+SIDEBOARD_PIN = '053926'                                                    # Пароль от выдвижного ящика в гостинной
+NIGHTSTAND_PIN = '11:35'                                                    # Пароль от тумбочки в спальне
+BATHROOM_PIN = 'рома коля илья сергей'                                      # Пароль от шкафа под ванной
+CLOSET_PIN = 'прошу извинить меня'                                          # Пароль от шкафа в спальне
+HALLWAY = 'hallway'                                                         # Команда для доступа к дверям прихожей
+LIVING_ROOM = 'living_closets'                                              # Команда для доступа к дверям гостиной
+BEDROOM = 'sleeping_room'                                                   # Команда для доступа к дверям спальни
+BATHROOM = 'swimming_room'                                                  # Команда для доступа к дверям ванной
+THE_END = 'the_end'                                                         # Команда для доступа к концовке
+
+# Создание массива сообщений последнего письма
+last_letter = ['']
+end_file = 'my_last_letter.txt'
+
+with open(end_file, 'r', encoding='utf-8') as file:
+    for line in file.readlines():
+        line = line.strip()
+        if line == '***':
+            last_letter.append('')
+        else:
+            last_letter[-1] += ' ' + line
 
 '''
 HTML
@@ -67,10 +85,10 @@ def help_user(message):
     bot_print(message, mess, html=True)
 
 
-@bot.message_handler(commands=['hallway'])
+@bot.message_handler(commands=[HALLWAY])
 def hallway(message):
     global STAGE
-    STAGE = 'hallway'
+    STAGE = HALLWAY
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = (types.KeyboardButton('Туалет'),
                types.KeyboardButton('Ванная'),
@@ -84,26 +102,25 @@ def hallway(message):
                      reply_markup=markup, parse_mode='html')
 
 
-@bot.message_handler(commands=['living_closets'])
+@bot.message_handler(commands=[LIVING_ROOM])
 def living_closets(message):
     global STAGE
-    STAGE = 'living_closets'
+    STAGE = LIVING_ROOM
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = (types.KeyboardButton('Холодильник'),
-               types.KeyboardButton('Сервант'),
+               types.KeyboardButton('Выдвижной ящик'),
                types.KeyboardButton('Балкон'))
     markup.add(*buttons)
     sleep(1)
-    bot.send_message(message.chat.id, '<code>LIVING_CLOSETS статус: </code><u>Активен</u>\n\n'
+    bot.send_message(message.chat.id, '<code>LIVING_ROOM статус: </code><u>Активен</u>\n\n'
                                       '<code>Выберите, что следует открыть</code>',
                      reply_markup=markup, parse_mode='html')
 
 
-# Изменить название команды
-@bot.message_handler(commands=['bedroom'])
+@bot.message_handler(commands=[BEDROOM])
 def bedroom(message):
     global STAGE
-    STAGE = 'bedroom'
+    STAGE = BEDROOM
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = (types.KeyboardButton('Шкаф'),
                types.KeyboardButton('Тумбочка'))
@@ -114,11 +131,10 @@ def bedroom(message):
                      reply_markup=markup, parse_mode='html')
 
 
-# Изменить название команды
-@bot.message_handler(commands=['bathroom'])
+@bot.message_handler(commands=[BATHROOM])
 def bathroom(message):
     global STAGE
-    STAGE = 'bathroom'
+    STAGE = BATHROOM
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     buttons = (types.KeyboardButton('Полка'),
                types.KeyboardButton('Шкаф под ванной'))
@@ -129,10 +145,21 @@ def bathroom(message):
                      reply_markup=markup, parse_mode='html')
 
 
+@bot.message_handler(commands=[THE_END])
+def the_end(message):
+    global STAGE
+    STAGE = THE_END
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    button = types.KeyboardButton('Далее')
+    markup.add(button)
+    sleep(1)
+    bot.send_message(message.chat.id, '', reply_markup=markup)
+
+
 @bot.message_handler(content_types=['text'])
 def get_text(message):
     global STAGE
-    if   STAGE == 'prolog':
+    if STAGE == 'prolog':
         if message.text in ['Кто вы?', 'Что происходит?', 'Где вы?']:
             answer_prolog_1(message)
             sleep(1)
@@ -147,7 +174,7 @@ def get_text(message):
             answer_prolog_3(message)
         elif message.text == 'Открыть входную дверь':
             answer_prolog_4(message)
-    elif STAGE == 'hallway':
+    elif STAGE == HALLWAY:
         if message.text in ['Туалет', 'Гостинная']:
             mess = '<code>Дверь открыта</code>'
             status_print(message, 'green', mess)
@@ -157,26 +184,27 @@ def get_text(message):
         elif message.text == 'Спальня':
             mess = '<code>Возможно, что-то блокирует дверь, воспользуйтесь ручным управлением</code>'
             status_print(message, 'yellow', mess)
-    elif STAGE == 'living_closets':
+    elif STAGE == LIVING_ROOM:
         if message.text == 'Холодильник':
             mess = '<code>Дверь открыта</code>'
             status_print(message, 'green', mess)
         elif message.text == 'Балкон':
             mess = '<code>У вас нет прав доступа к этой двери</code>'
             status_print(message, 'red', mess)
-        elif message.text == 'Сервант':
+        elif message.text == 'Выдвижной ящик':
             mess = '<code>Введите пин-код:</code>'
             STAGE = 'sideboard_pin_enter'
             status_print(message, 'yellow', mess)
-    elif STAGE == 'bedroom':
+    elif STAGE == BEDROOM:
         if message.text == 'Шкаф':
-            mess = '<code>Дверь открыта</code>'
-            status_print(message, 'green', mess)
+            mess = '<code>Введите пин-код:</code>'
+            STAGE = 'closet_pin_enter'
+            status_print(message, 'yellow', mess)
         elif message.text == 'Тумбочка':
             mess = '<code>Введите пин-код:</code>'
             STAGE = 'nightstand_pin_enter'
             status_print(message, 'yellow', mess)
-    elif STAGE == 'bathroom':
+    elif STAGE == BATHROOM:
         if message.text == 'Полка':
             mess = '<code>Дверь открыта</code>'
             status_print(message, 'green', mess)
@@ -200,14 +228,24 @@ def get_text(message):
             mess = '<code>Неверный пароль</code>'
             status_print(message, 'red', mess)
         bedroom(message)
+    elif STAGE == 'closet_pin_enter':
+        if message.text.lower() == CLOSET_PIN:
+            mess = '<code>Дверь открыта</code>'
+            status_print(message, 'green', mess)
+        else:
+            mess = '<code>Неверный пароль</code>'
+            status_print(message, 'red', mess)
+        bedroom(message)
     elif STAGE == 'bathroom_pin_enter':
-        if message.text == BATHROOM_PIN:
+        if message.text.lower() == BATHROOM_PIN:
             mess = '<code>Дверь открыта</code>'
             status_print(message, 'green', mess)
         else:
             mess = '<code>Неверный пароль</code>'
             status_print(message, 'red', mess)
         bathroom(message)
+    elif STAGE == THE_END:
+        pass
 
 
 def prolog(message):
